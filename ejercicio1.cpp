@@ -5,13 +5,10 @@
 
 using namespace std;
 
-int main()
-{
-    return 0;
-}
+
 class AVL
 {
-private:
+public:
     struct NodoAVL
     {
         int id;
@@ -72,7 +69,6 @@ private:
 
     NodoAVL *insertarAux(NodoAVL *nodo, int dato, string tit)
     {
-        cout << "Insertando " << dato << " en insertarAux" << endl;
         if (!nodo)
         {
             total++;
@@ -127,17 +123,17 @@ private:
 
         return nodo;
     }
-    bool buscarLibroAux(NodoAVL *n, int id)
+    NodoAVL * buscarLibroAux(NodoAVL *n, int id)
     {
         if (n == NULL)
-            return false;
+            return NULL;
         if (id < n->id)
-            buscarLibroAux(n->izq, id);
+           return buscarLibroAux(n->izq, id);
         else if (id > n->id)
-            buscarLibroAux(n->der, id);
+            return buscarLibroAux(n->der, id);
         else if (id == n->id)
         {
-            return true; // Encontrado
+            return n; // Encontrado
         }
     }
     string FIND(NodoAVL *n, int e)
@@ -152,7 +148,7 @@ private:
         }
     }
 
-    void TOGGLE(NodoAVL *n, int id)
+    void toggleDisponibilidad(NodoAVL *n, int id)
     {
         if (buscarLibroAux(n, id))
         {
@@ -174,8 +170,59 @@ private:
             cout << "libro_no_encontrado" << endl;
         }
     }
+  
+public:
+    AVL() : raiz(NULL), total(0), habilitados(0),deshabilitados(0) {}
+
+    void insertar(int dato, string titulo)
+    {
+        raiz = insertarAux(raiz, dato, titulo);
+    }
+
+    void FIND(int id)
+    {
+        NodoAVL *n = buscarLibroAux(raiz, id);
+        if (n == NULL)
+        {
+            cout << "libro_no_encontrado" << endl;
+        }
+        else
+        {
+            cout << n->titulo << " " << (n->disp ? "H" : "D") << endl;
+        }
+    }
+
+    void TOGGLE(int id)
+    {
+        NodoAVL *n = buscarLibroAux(raiz, id);
+        if (n == NULL)
+        {
+            cout << "libro_no_encontrado" << endl;
+        }
+        else
+        {
+            toggleDisponibilidad(n,id);
+        }
+    }
+
     void COUNT()
     {
-        cout << "Total: " << total << " Habilitados: " << habilitados << " Deshabilitados: " << deshabilitados << endl;
+        cout << total << " " << habilitados << " " << deshabilitados << endl;
     }
+};
+int main()
+{
+    AVL arbol;
+    arbol.insertar(15, "Don_Quijote");
+    arbol.insertar(23, "La_Casa_de_los_Espiritus");
+    arbol.FIND(15);  // Output: Don_Quijote H
+    arbol.FIND(88);  // Output: libro_no_encontrado
+    arbol.TOGGLE(15);
+    arbol.FIND(15);  // Output: Don_Quijote D
+    arbol.insertar(25, "Cien_Años_de_Soledad");
+    arbol.COUNT();   // Output: 3 2 1
+    arbol.TOGGLE(99);  // Output: libro_no_encontrado
+    arbol.TOGGLE(23);
+    arbol.COUNT();   // Output: 3 1 2
+    return 0;
 }
