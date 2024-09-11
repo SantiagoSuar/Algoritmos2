@@ -244,7 +244,7 @@ public:
 
 int main()
 {
-    AVL arbol;
+    AVL *arbol = new AVL;
     int numOperaciones;
     cin >> numOperaciones;
 
@@ -256,16 +256,16 @@ int main()
         if (operacion == "ADD")
         {
             cin >> param1 >> param2;
-            arbol.ejecutarOperacion(operacion, param1, param2);
+            arbol->ejecutarOperacion(operacion, param1, param2);
         }
         else if (operacion == "FIND" || operacion == "TOGGLE")
         {
             cin >> param1;
-            arbol.ejecutarOperacion(operacion, param1);
+            arbol->ejecutarOperacion(operacion, param1);
         }
         else if (operacion == "COUNT")
         {
-            arbol.ejecutarOperacion(operacion,0,"");
+            arbol->ejecutarOperacion(operacion,0,"");
         }
     }
 
