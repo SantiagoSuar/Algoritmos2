@@ -8,7 +8,7 @@ using namespace std;
 
 class AVL
 {
-public:
+private:
     struct NodoAVL
     {
         int id;
@@ -172,7 +172,7 @@ public:
     }
   
 public:
-    AVL() : raiz(NULL), total(0), habilitados(0),deshabilitados(0) {}
+    AVL() : raiz(NULL), total(0), habilitados(0), deshabilitados(0) {}
 
     void insertar(int dato, string titulo)
     {
@@ -209,20 +209,65 @@ public:
     {
         cout << total << " " << habilitados << " " << deshabilitados << endl;
     }
+
+    void ejecutarOperacion(const string &operacion, const int &param1, const string &param2 = "")
+    {
+        if (operacion == "ADD")
+        {
+            int id = param1;
+            string titulo = param2;
+            insertar(id, titulo);
+        }
+        else if (operacion == "FIND" || operacion == "TOGGLE")
+        {
+            int id = param1;
+            ejecutarOperacionAux(operacion, id);
+        }
+        else if (operacion == "COUNT")
+        {
+            COUNT();
+        }
+    }
+
+    void ejecutarOperacionAux(const string &operacion, int id)
+    {
+        if (operacion == "FIND")
+        {
+            FIND(id);
+        }
+        else if (operacion == "TOGGLE")
+        {
+            TOGGLE(id);
+        }
+    }
 };
+
 int main()
 {
     AVL arbol;
-    arbol.insertar(15, "Don_Quijote");
-    arbol.insertar(23, "La_Casa_de_los_Espiritus");
-    arbol.FIND(15);  // Output: Don_Quijote H
-    arbol.FIND(88);  // Output: libro_no_encontrado
-    arbol.TOGGLE(15);
-    arbol.FIND(15);  // Output: Don_Quijote D
-    arbol.insertar(25, "Cien_Años_de_Soledad");
-    arbol.COUNT();   // Output: 3 2 1
-    arbol.TOGGLE(99);  // Output: libro_no_encontrado
-    arbol.TOGGLE(23);
-    arbol.COUNT();   // Output: 3 1 2
+    int numOperaciones;
+    cin >> numOperaciones;
+
+    for (int i = 0; i < numOperaciones; i++)
+    {
+        string operacion, param2;
+        int  param1;
+        cin >> operacion;
+        if (operacion == "ADD")
+        {
+            cin >> param1 >> param2;
+            arbol.ejecutarOperacion(operacion, param1, param2);
+        }
+        else if (operacion == "FIND" || operacion == "TOGGLE")
+        {
+            cin >> param1;
+            arbol.ejecutarOperacion(operacion, param1);
+        }
+        else if (operacion == "COUNT")
+        {
+            arbol.ejecutarOperacion(operacion,0,"");
+        }
+    }
+
     return 0;
 }
