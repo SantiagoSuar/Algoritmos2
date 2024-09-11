@@ -83,6 +83,7 @@ private:
         else if (dato == nodo->id)
         {
             nodo->titulo = tit;
+            if(!nodo->disp)habilitados++ , deshabilitados-- , nodo->disp=true;
             return nodo;
         }
 
@@ -138,7 +139,7 @@ private:
     }
     string FIND(NodoAVL *n, int e)
     {
-        if (buscarLibroAux(n, e) && n->disp == 1)
+        if (buscarLibroAux(n, e) && n->disp == true)
         {
             return n->titulo;
         }
@@ -152,15 +153,15 @@ private:
     {
         if (buscarLibroAux(n, id))
         {
-            if (n->disp == 1)
+            if (n->disp == true)
             {
-                n->disp = 0;
+                n->disp = false;
                 habilitados--;
                 deshabilitados++;
             }
             else
             {
-                n->disp = 1;
+                n->disp = true;
                 habilitados++;
                 deshabilitados--;
             }
