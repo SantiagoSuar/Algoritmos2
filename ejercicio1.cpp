@@ -245,6 +245,7 @@ public:
 
 int main()
 {
+
     AVL *arbol = new AVL;
     int numOperaciones;
     cin >> numOperaciones;

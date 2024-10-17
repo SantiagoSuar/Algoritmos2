@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 #include <limits>
-
+#include <fstream>
 using namespace std;
 
 struct Libro
@@ -49,7 +49,6 @@ private:
         }
         return num;
     }
-    
 
     int fnHash2(int key)
     {
@@ -73,14 +72,14 @@ private:
         }
         return h;
     }
-    void insertarAux(int id, string titulo,Libro **vector)
+    void insertarAux(int id, string titulo, Libro **vector)
     {
 
         int i = 0;
         bool insertado = false;
         while (!insertado)
         {
-            int pos = abs(fnHash1(id) + i * fnHash2(id) % buckets);
+            int pos = abs(fnHash1(id) + i * fnHash2(id)) % buckets;
 
             if (!vector[pos] || vector[pos]->borrado)
             {
@@ -94,33 +93,61 @@ private:
                 if (vector[pos]->id == id)
                 {
                     vector[pos]->titulo = titulo;
-                    if (!vector[pos]->disp)
+                    if (!vector[pos]->disp){
                         habilitados++, deshabilitados--, vector[pos]->disp = true;
+                    }
+                        insertado = true;
                 }
+                        
+
             }
             i++;
         }
     }
-    void rehash()
+void rehash()
+{
+    int nuevoBuckets = sigPrimo(buckets * 2);
+    Libro **nuevoVector = new Libro *[nuevoBuckets];
+    for (int i = 0; i < nuevoBuckets; i++)
     {
-        buckets = sigPrimo(buckets*2);
-        Libro **nuevoVector = new Libro *[buckets];
-        for (int i = 0; i < buckets; i++)
+        nuevoVector[i] = NULL;
+    }
+    int cantNue= this->cantElem;
+    this->habilitados=0;
+    this->deshabilitados=0;
+
+    int viejosBuckets = buckets;
+    buckets = nuevoBuckets; // Actualiza el tamaño de buckets antes de reinsertar
+
+    for (int i = 0; i < viejosBuckets; i++)
+    {
+        if (vector[i] != NULL && !vector[i]->borrado)
         {
             int id = vector[i]->id;
-            string tit=vector[i]->titulo;
-            insertarAux(id,tit,nuevoVector);
+            string tit = vector[i]->titulo;
+            insertarAux(id, tit, nuevoVector);
+            if(!vector[i]->disp){
+                toggleDisponibilidad(id,nuevoVector);
+            }
+
         }
-        delete[] vector;
-        vector = nuevoVector;
     }
-    int obtenerPos(int id)
+
+    delete[] vector;
+    vector = nuevoVector;
+    cantElem=cantNue;
+
+}
+
+
+    int obtenerPos(int id,Libro **vector)
     {
         int i = 0;
         bool insertado = false;
         while (!insertado)
         {
-            int pos = abs(fnHash1(id) + i * fnHash2(id) % buckets);
+                       int pos = abs(fnHash1(id) + i * fnHash2(id)) % buckets;
+
 
             if (!vector[pos])
             {
@@ -145,9 +172,9 @@ private:
         }
     }
 
-    void toggleDisponibilidad(int id)
+    void toggleDisponibilidad(int id,Libro **vector)
     {
-        int pos = obtenerPos(id);
+        int pos = obtenerPos(id,vector);
         if (pos != -1)
         {
             vector[pos]->disp = !vector[pos]->disp;
@@ -161,6 +188,7 @@ private:
                 habilitados++;
                 deshabilitados--;
             }
+            
         }
         else
         {
@@ -169,11 +197,12 @@ private:
     }
 
 public:
-
     HASH(int tamanio)
     {
         this->buckets = tamanio;
         this->cantElem = 0;
+        this->deshabilitados=0;
+        this->habilitados=0;
         this->vector = new Libro *[this->buckets]();
     }
 
@@ -181,14 +210,16 @@ public:
     {
         if (((float)(cantElem + 1) / buckets) > 0.7)
         {
+            
             this->rehash();
         }
 
-        insertarAux(id, titulo,this->vector);
+        insertarAux(id, titulo, this->vector);
+        
     }
     void FIND(int id)
     {
-        int pos = obtenerPos(id);
+        int pos = obtenerPos(id,vector);
         if (pos == -1)
         {
             cout << "libro_no_encontrado" << endl;
@@ -201,13 +232,13 @@ public:
     void TOGGLE(int id)
     {
 
-        toggleDisponibilidad(id);
+        toggleDisponibilidad(id,vector);
     }
     void COUNT()
     {
         cout << cantElem << " " << habilitados << " " << deshabilitados << endl;
     }
-     void ejecutarOperacion(string &operacion, const int &param1, const string &param2 = "")
+    void ejecutarOperacion(const string &operacion, const int &param1, const string &param2 = "")
     {
         if (operacion == "ADD")
         {
@@ -239,32 +270,39 @@ public:
     }
 };
 
-int main()
-{
-     HASH *arbol = new HASH(20);
-    int numOperaciones;
-    cin >> numOperaciones;
 
-    for (int i = 0; i < numOperaciones; i++)
-    {
-        string operacion, param2;
-        int  param1;
-        cin >> operacion;
-        if (operacion == "ADD")
-        {
-            cin >> param1 >> param2;
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+int main() {
+    fstream file("C:\\Users\\Santiago\\Algoritmos2\\Obligatorio1\\ejercicio4\\100.in.txt");
+
+    if (!file.is_open()) {
+        cout << "Error al abrir archivo" << endl;
+        return -1;
+    }
+    HASH *arbol = new HASH(20);
+    string operacion, param2;
+    int param1;
+
+    // Leer todas las operaciones desde el archivo
+    while (file >> operacion) {
+
+        if (operacion == "ADD") {
+            file >> param1 >> param2;
             arbol->ejecutarOperacion(operacion, param1, param2);
-        }
-        else if (operacion == "FIND" || operacion == "TOGGLE")
-        {
-            cin >> param1;
+        } else if (operacion == "FIND" || operacion == "TOGGLE") {
+            file >> param1;
             arbol->ejecutarOperacion(operacion, param1);
-        }
-        else if (operacion == "COUNT")
-        {
-            arbol->ejecutarOperacion(operacion,0,"");
+        } else if (operacion == "COUNT") {
+            arbol->ejecutarOperacion(operacion, 0, "");
         }
     }
 
+    file.close();
     return 0;
 }
+
+
