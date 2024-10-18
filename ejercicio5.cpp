@@ -6,8 +6,8 @@
 using namespace std;
 struct Arista
 {
-    int origen;
-    int destino;
+    Ciudad origen;
+    Ciudad destino;
     int peso;
     Arista *sig;
 };
@@ -22,13 +22,12 @@ struct Mision
     string nombre;
     int id;
 };
-struct NodoLista
+struct NodoLista 
 {
-    int dato;
+    Mision* mision;
     int tam;
     NodoLista *sig;
-    NodoLista() : dato(0), sig(NULL) {}
-    NodoLista(int d) : dato(d), sig(NULL) {}
+    NodoLista() : mision(NULL), sig(NULL) {}
 };
 class List
 {
@@ -36,13 +35,14 @@ private:
     NodoLista *ppio;
 
 public:
-    void InsertPpio(int d)
+    void InsertPpio(Mision* m)
     {
-        NodoLista *nuevo = new NodoLista(d);
+        NodoLista *nuevo = new NodoLista();
         nuevo->sig = ppio;
+        nuevo -> mision = m; 
         ppio = nuevo;
+        ppio->tam++;
     }
-
     bool esVacia(NodoLista *l)
     {
         return l->tam == 0;
@@ -74,34 +74,33 @@ public:
         delete[] vertices;
     }
 
-    void agregarArista(int origen, int destino, int peso = 1)
+    void agregarArista(Ciudad origen, Ciudad destino, int peso)
     {
         Arista *nuevaArista = new Arista();
         nuevaArista->destino = destino;
         nuevaArista->peso = peso;
-        nuevaArista->sig = vertices[origen];
-        vertices[origen] = nuevaArista;
+        nuevaArista->sig = vertices[origen.id];
+        vertices[origen.id] = nuevaArista;
         if (!dirigido)
         {
             Arista *inversa = new Arista();
             inversa->destino = origen;
             inversa->peso = peso;
-            inversa->sig = vertices[destino];
-            vertices[destino] = inversa;
+            inversa->sig = vertices[destino.id];
+            vertices[destino.id] = inversa;
         }
     }
 
     void imprimir()
     {
-        cout << endl
-             << "Lista de adyacencia:" << endl;
+        cout << endl << "Lista de adyacencia:" << endl;
         for (int i = 1; i <= cantidadV; i++)
         {
             cout << i << ": ";
             Arista *actual = adyacentes(i);
             while (actual->sig != NULL)
             {
-                cout << actual->destino << " ";
+                cout << actual->destino.nombre << " ";
                 if (ponderado)
                 {
                     cout << "(" << actual->peso << ") ";
@@ -126,10 +125,67 @@ public:
         return cantidadV;
     }
 };
+
+class Cola
+{
+private:
+    NodoLista* ppio;
+    NodoLista* fin;
+
+public:
+    Cola()
+    {
+        ppio = NULL;
+        fin = NULL;
+    }
+
+    void push(int d, string s)
+    {
+        NodoLista* nuevo = new NodoLista();
+        nuevo->mision->id = d;
+        if (ppio == NULL)
+        {
+            ppio = nuevo;
+            fin = nuevo;
+        }
+        else
+        {
+            fin->sig = nuevo;
+            fin = nuevo;
+        }
+    }
+
+    bool empty()
+    {
+        return ppio == NULL;
+    }
+
+    int front()
+    {
+        if (ppio == NULL)
+        {
+            return -1;
+        }
+        return ppio->mision->id;
+    }
+
+    void pop()
+    {
+        if (ppio == NULL)
+        {
+            return;
+        }
+        NodoLista* temp = ppio;
+        ppio = ppio->sig;
+        delete temp;
+    }
+};
+
 class MinHeap
 {
 public:
-    Objeto *vec; // Array de objetos
+    Ciudad *vec; 
+    int* costos;
     int capacidad;
     int primeroLibre;
 
@@ -157,24 +213,21 @@ public:
     {
         return 2 * pos + 1;
     }
-
-    bool comparar(const Objeto &padre, const Objeto &hijo)
+    bool comparar(const Ciudad &padre, const Ciudad &hijo) 
     {
-        // Prioridad por precio, si los precios son iguales, por id mayor
-        if (padre.precio == hijo.precio)
+        // Prioridad por grado, si los grados son iguales, por id mayor
+        if (costos[padre.id] == costos[hijo.id])
         {
-            return padre.id < hijo.id; // El id más grande tiene prioridad si los precios son iguales
+            return padre.id < hijo.id;
         }
-        return padre.precio > hijo.precio; // Menor precio tiene prioridad
+        return costos[padre.id] > costos[hijo.id]; // Menor precio tiene prioridad
     }
-
     void intercambiar(int pos1, int pos2)
     {
-        Objeto aux = vec[pos1];
+        Ciudad aux = vec[pos1];
         vec[pos1] = vec[pos2];
         vec[pos2] = aux;
     }
-
     void flotar(int pos)
     {
         if (pos == 1)
@@ -186,13 +239,11 @@ public:
             flotar(posPadre);
         }
     }
-
     void hundir(int pos)
     {
         int posIzq = hijoIzq(pos);
         int posDer = hijoDer(pos);
         int menor = pos;
-
         if (posIzq < primeroLibre && comparar(vec[menor], vec[posIzq]))
         {
             menor = posIzq;
@@ -211,17 +262,15 @@ public:
 public:
     MinHeap(int tam)
     {
-        vec = new Objeto[tam + 1]; // Posición 0 no se usa
+        Ciudad* vec = new Ciudad[tam + 1]; // Posición 0 no se usa
         primeroLibre = 1;
         capacidad = tam;
     }
-
     ~MinHeap()
     {
         delete[] vec;
     }
-
-    void insertar(Objeto obj)
+    void insertar(Ciudad obj)
     {
         if (!estaLleno())
         {
@@ -230,36 +279,13 @@ public:
             primeroLibre++;
         }
     }
-
-    Objeto extraerMin()
+    Ciudad extraerMin()
     {
-        if (estaVacio())
-        {
-            return {-1, -1}; // Valor especial si está vacío
-        }
-        Objeto min = vec[1];
+        Ciudad min = vec[1];
         vec[1] = vec[primeroLibre - 1];
         primeroLibre--;
         hundir(1);
         return min;
-    }
-
-    void actualizar(int id, int nuevoPrecio)
-    {
-        // Buscar el objeto con el mismo id y actualizar su precio si es menor
-        for (int i = 1; i < primeroLibre; i++)
-        {
-            if (vec[i].id == id)
-            {
-                if (nuevoPrecio < vec[i].precio)
-                {
-                    vec[i].precio = nuevoPrecio;
-                    hundir(i); // Reajustar la posición
-                    flotar(i); // Reajustar la posición
-                }
-                break;
-            }
-        }
     }
 };
 
@@ -278,45 +304,67 @@ public:
             Arista *adyacentes = graph->adyacentes(i);
             while (adyacentes)
             {
-                in_degree[adyacentes->destino]++;
+                in_degree[adyacentes->destino.id]++;
                 adyacentes = adyacentes->sig;
             }
         }
     }
-    void OrdenTopologic(GrafoLista *&grafo, int *in_degree)
+    Mision misiones[100];  // Asume un tamaño máximo de 100 misiones, ajusta según tus necesidades.
+
+void agregarMision(int id, string nombre) {
+    misiones[id].id = id;
+    misiones[id].nombre = nombre;
+}
+
+string obtenerNombreMision(int id) {
+    if (id >= 0 && id < 100) {  // Verifica que el ID esté dentro del rango
+        return misiones[id].nombre;
+    }
+    return "Misión desconocida";
+}
+
+
+void OrdenTopologic(GrafoLista *&grafo, int* in_degree)
+{
+    Cola cola;
+    List ordenTopologico;
+
+    // Agregar todos los vértices con grado de entrada 0 a la cola
+    for (int i = 0; i < grafo->cantidadVertices(); i++)
     {
-        Cola cola;
-        List ordenTopologico;
-        for (int i = 0; i < grafo->cantidadVertices(); i++)
+        if (in_degree[i] == 0)
         {
-            if (in_degree[i] == 0)
-            {
-                cola.push(i);
-            }
-        }
-        int i = 0;
-        while (!cola.empty())
-        {
-            int nodoActual = cola.front();
-            cola.pop();
-            ordenTopologico.InsertPpio(nodoActual);
-            Arista *adyacentes = grafo->adyacentes(nodoActual);
-            while (adyacentes)
-            {
-                int destino = adyacentes->destino;
-                in_degree[destino]--;
-                if (in_degree[destino] == 0)
-                {
-                    cola.push(destino);
-                }
-                adyacentes = adyacentes->sig;
-            }
-        }
-        if (ordenTopologico.esVacia() != grafo->cantidadVertices())
-        {
-            cout << "El grafo tiene un ciclo" << endl;
+            cola.push(i);
         }
     }
+
+    while (!cola.empty())
+    {
+        int nodoActual = cola.front();
+        cola.pop();
+
+        // Crear nueva misión y asignarle el ID y nombre
+        Mision* nueva = new Mision();
+        nueva->id = nodoActual;
+        nueva->nombre = obtenerNombreMision(nodoActual);  // Obtener el nombre desde la tabla
+
+        ordenTopologico.InsertPpio(nueva);  // Insertar la misión en la lista de orden topológico
+
+        Arista* adyacentes = grafo->adyacentes(nodoActual);
+
+        while (adyacentes)
+        {
+            int destino = adyacentes->destino.id;  // Obtener el ID del destino correctamente
+            in_degree[destino]--;
+            if (in_degree[destino] == 0)
+            {
+                cola.push(destino);
+            }
+            adyacentes = adyacentes->sig;
+        }
+    }
+}
+
     void dijsktra(int origen, GrafoLista *g)
     {
         int *vengo = new int[cantciudades + 1]();
@@ -375,4 +423,4 @@ int main()
 {
     // TODO
     return 0;
-}
+}   
