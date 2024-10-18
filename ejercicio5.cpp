@@ -34,19 +34,20 @@ class List
 {
 private:
     NodoLista *ppio;
+
 public:
-   void InsertPpio(int d)
+    void InsertPpio(int d)
     {
         NodoLista *nuevo = new NodoLista(d);
         nuevo->sig = ppio;
         ppio = nuevo;
     }
-    
-    bool esVacia(NodoLista* l)
+
+    bool esVacia(NodoLista *l)
     {
         return l->tam == 0;
     }
-    unsigned int cantidadElementos(NodoLista* l)
+    unsigned int cantidadElementos(NodoLista *l)
     {
         return l->tam;
     }
@@ -339,28 +340,34 @@ public:
             }
         }
     }
-    void caminoMasCorto(int *costos, int *vengo, int destino, int origen, List OrdenTopologico,GrafoLista* g,int *indegree)
+    string camino1(int *vengo, int destino, int origen)
+    {
+        if (destino == origen)
+        {
+            cout << origen << " ";
+        }
+        else if (vengo[destino] == 0)
+        {
+            cout << "No hay camino" << endl;
+        }
+        else
+        {
+            camino1(vengo, vengo[destino], origen);
+            cout << destino << " ";
+        }
+    }
+    void caminoMasCorto(int *costos, int *vengo, int destino, int origen, List OrdenTopologico, GrafoLista *g, int *indegree)
     {
         OrdenTopologic(g, indegree);
-        int misionDisp= OrdenTopologico.extraerElem();
-        dijsktra(origen,g);
-            int costoMision= costos[misionDisp];
-            int vengoMision= vengo[misionDisp];
-            while (vengoMision != origen)
-            {
-                posiciones[cantMisiones] = vengoMision;
-                cantMisiones++;
-                misionDisp = vengoMision;
-                costoMision = costos[misionDisp];
-                vengoMision = vengo[misionDisp];
-            }
-    }
-        
-        
-      
-      {
-          /* code */
-      }
+        for (int i = 1; i <= cantMisiones; i++)
+        {
+            int misionDisp = OrdenTopologico.extraerElem();
+            dijsktra(origen, g);
+            string camino = "";
+            camino = camino1(vengo, misionDisp, origen);
+            cout << camino << endl;
+            origen=misionDisp;
+        }
     }
 };
 
