@@ -342,7 +342,20 @@ public:
     void caminoMasCorto(int *costos, int *vengo, int destino, int origen, List OrdenTopologico,GrafoLista* g,int *indegree)
     {
         OrdenTopologic(g, indegree);
-        int dato= OrdenTopologico.extraerElem();
+        int misionDisp= OrdenTopologico.extraerElem();
+        dijsktra(origen,g);
+            int costoMision= costos[misionDisp];
+            int vengoMision= vengo[misionDisp];
+            while (vengoMision != origen)
+            {
+                posiciones[cantMisiones] = vengoMision;
+                cantMisiones++;
+                misionDisp = vengoMision;
+                costoMision = costos[misionDisp];
+                vengoMision = vengo[misionDisp];
+            }
+    }
+        
         
       
       {
