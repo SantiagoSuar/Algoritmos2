@@ -367,9 +367,7 @@ void OrdenTopologic(GrafoLista *&grafo, int* in_degree)
 
     void dijsktra(int origen, GrafoLista *g)
     {
-        int *vengo = new int[cantciudades + 1]();
-        int *costos = new int[cantciudades + 1]();
-        bool *visitados = new bool[cantciudades + 1]();
+
         MinHeap h(cantciudades + 1);
         h.insertar(origen);
         while (!h.estaVacio())
@@ -406,16 +404,37 @@ void OrdenTopologic(GrafoLista *&grafo, int* in_degree)
     }
     void caminoMasCorto(int *costos, int *vengo, int destino, int origen, List OrdenTopologico, GrafoLista *g, int *indegree)
     {
-        OrdenTopologic(g, indegree);
-        for (int i = 1; i <= cantMisiones; i++)
+        int *vengo = new int[cantciudades + 1]();
+        int *costos = new int[cantciudades + 1]();
+        bool *visitados = new bool[cantciudades + 1]();
+        int costoTot = 0;
+        while (!OrdenTopologico.esVacia())
         {
-            int misionDisp = OrdenTopologico.extraerElem();
-            dijsktra(origen, g);
+            
+        
+        
+        LlenarVectorGrados(g, indegree);
+
+        OrdenTopologic(g, indegree);
+        int cantOrden0 = OrdenTopologico.cantidadElementos0();
+        dijsktra(origen, g, costos, vengo, visitados);
+        for (int i = 1; i <= cantOrden0; i++)
+        {
+        int misionDisp = OrdenTopologico.extraerElem();
+        int costoMin = INT16_MIN;
+            if (costos[misionDisp]>costoMin)
+            {
+                costoMin = costos[misionDisp];
+            }
+            
+            
+        }
+
             string camino = "";
             camino = camino1(vengo, misionDisp, origen);
-            cout << camino << endl;
-            origen=misionDisp;
-        }
+            costoTot += costos[misionDisp];
+            origen = misionDisp;
+    }
     }
 };
 
