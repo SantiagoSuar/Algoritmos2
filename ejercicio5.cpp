@@ -1,7 +1,7 @@
 #include <cassert>
 #include <string>
 #include <iostream>
-#include <limits>
+#include <climits>
 
 using namespace std;
 
@@ -56,14 +56,13 @@ public:
     {
         return 2 * pos + 1;
     }
-    bool comparar(const Ciudad &padre, const Ciudad &hijo)
+    bool comparar(const Ciudad &padre, const Ciudad &hijo, int *costos)
     {
-        // Prioridad por grado, si los grados son iguales, por id mayor
         if (costos[padre.id] == costos[hijo.id])
         {
-            return padre.id < hijo.id;
+            return padre.id > hijo.id; // Menor id tiene prioridad si los costos son iguales
         }
-        return costos[padre.id] > costos[hijo.id]; // Menor precio tiene prioridad
+        return costos[padre.id] > costos[hijo.id]; // Menor costo tiene prioridad
     }
     void intercambiar(int pos1, int pos2)
     {
@@ -71,41 +70,41 @@ public:
         vec[pos1] = vec[pos2];
         vec[pos2] = aux;
     }
-    void flotar(int pos)
+    void flotar(int pos, int *costos)
     {
         if (pos == 1)
-            return; // Ya estamos en la raíz
+            return; 
         int posPadre = padre(pos);
-        if (comparar(vec[posPadre], vec[pos]))
+        if (comparar(vec[posPadre], vec[pos], costos))
         {
             intercambiar(posPadre, pos);
-            flotar(posPadre);
+            flotar(posPadre, costos);
         }
     }
-    void hundir(int pos)
+    void hundir(int pos, int *costos)
     {
         int posIzq = hijoIzq(pos);
         int posDer = hijoDer(pos);
         int menor = pos;
-        if (posIzq < primeroLibre && comparar(vec[menor], vec[posIzq]))
+        if (posIzq < primeroLibre && comparar(vec[menor], vec[posIzq], costos))
         {
             menor = posIzq;
         }
-        if (posDer < primeroLibre && comparar(vec[menor], vec[posDer]))
+        if (posDer < primeroLibre && comparar(vec[menor], vec[posDer], costos))
         {
             menor = posDer;
         }
-        if (menor != pos)
+        if (menor != pos && comparar(vec[pos], vec[menor], costos))
         {
             intercambiar(pos, menor);
-            hundir(menor);
+            hundir(menor, costos);
         }
     }
 
 public:
     MinHeap(int tam)
     {
-        Ciudad *vec = new Ciudad[tam + 1]; // Posición 0 no se usa
+        vec = new Ciudad[tam + 1](); // Posición 0 no se usa
         primeroLibre = 1;
         capacidad = tam;
     }
@@ -113,21 +112,22 @@ public:
     {
         delete[] vec;
     }
-    void insertar(Ciudad obj)
+    void insertar(Ciudad &obj, int *costos)
     {
         if (!estaLleno())
         {
+
             vec[primeroLibre] = obj;
-            flotar(primeroLibre);
+            flotar(primeroLibre, costos);
             primeroLibre++;
         }
     }
-    Ciudad extraerMin()
+    Ciudad extraerMin(int *costos)
     {
         Ciudad min = vec[1];
         vec[1] = vec[primeroLibre - 1];
         primeroLibre--;
-        hundir(1);
+        hundir(1, costos);
         return min;
     }
 };
@@ -197,6 +197,7 @@ struct Arista
 };
 class GrafoLista
 {
+
 private:
     Arista **vertices;
     int cantidadV;
@@ -216,10 +217,29 @@ public:
     {
         delete[] vertices;
     }
+    GrafoLista *copiarGrafo()
+    {
+        GrafoLista *nuevoGrafo = new GrafoLista(cantidadV, dirigido, ponderado);
+        for (int i = 1; i <= cantidadV; i++)
+        {
+            Arista *actual = vertices[i];
+            while (actual)
+            {
+                Ciudad origen = {actual->origen.id, actual->origen.nombre};
+                Ciudad destino = {actual->destino.id, actual->destino.nombre};
+                int peso = actual->peso;
+                nuevoGrafo->agregarArista(origen, destino, peso);
+
+                actual = actual->sig;
+            }
+        }
+        return nuevoGrafo;
+    }
 
     void agregarArista(Ciudad origen, Ciudad destino, int peso)
     {
         Arista *nuevaArista = new Arista();
+        nuevaArista->origen = origen;
         nuevaArista->destino = destino;
         nuevaArista->peso = peso;
         nuevaArista->sig = vertices[origen.id];
@@ -228,12 +248,16 @@ public:
         if (!dirigido)
         {
             Arista *inversa = new Arista();
+            inversa->origen = destino;
             inversa->destino = origen;
             inversa->peso = peso;
             inversa->sig = vertices[destino.id];
             vertices[destino.id] = inversa;
         }
     }
+ 
+
+    
 
     Arista *adyacentes(int vertice)
     {
@@ -245,13 +269,71 @@ public:
         return cantidadV;
     }
 };
+struct Arista2
+{
+    Mision origen;
+    Mision destino;
+    Arista2 *sig;
+};
+class GrafoM
+{
 
+private:
+    Arista2 **vertices;
+    int cantidadV;
+    bool dirigido;
+    bool ponderado;
+
+public:
+    GrafoM(int cantV, bool esDirigido, bool esPonderado)
+    {
+        vertices = new Arista2 *[cantV + 1]();
+        cantidadV = cantV;
+        dirigido = esDirigido;
+        ponderado = esPonderado;
+    }
+
+    ~GrafoM()
+    {
+        delete[] vertices;
+    }
+
+    void agregarArista(Mision origen, Mision destino)
+    {
+        Arista2 *nuevaArista = new Arista2();
+        nuevaArista->destino = destino;
+        nuevaArista->sig = vertices[origen.id];
+        vertices[origen.id] = nuevaArista;
+
+        if (!dirigido)
+        {
+            Arista2 *inversa = new Arista2();
+            inversa->destino = origen;
+            inversa->sig = vertices[destino.id];
+            vertices[destino.id] = inversa;
+        }
+    }
+
+    Arista2 *adyacentes(int vertice)
+    {
+        return vertices[vertice];
+    }
+
+    int cantidadVertices()
+    {
+        return cantidadV;
+    }
+    void eliminarVertice(int vertice)
+    {
+        vertices[vertice] = nullptr;
+    }
+};
 class camino
 {
 private:
     int cantMisiones;
     int cantciudades;
-    Mision misiones[100]; // Asume un tamaño máximo de 100 misiones, ajusta según tus necesidades.
+    Mision misiones[200]; 
 
 public:
     camino(int numCiudades)
@@ -259,126 +341,149 @@ public:
         cantciudades = numCiudades;
     }
 
-    void LlenarVectorGrados(GrafoLista *graph, int *in_degree)
+    void LlenarVectorGrados(GrafoM *g, int *in_degree)
     {
-        for (int i = 0; i < graph->cantidadVertices(); i++)
+        for (int i = 1; i <= g->cantidadVertices(); i++)
         {
-            Arista *adyacentes = graph->adyacentes(i);
+            Arista2 *adyacentes = g->adyacentes(i);
             while (adyacentes)
             {
                 in_degree[adyacentes->destino.id]++;
                 adyacentes = adyacentes->sig;
             }
+            
         }
     }
 
-    void agregarMision(int id, string nombre, Ciudad ciudad)
-    {
-        misiones[id].id = id;
-        misiones[id].nombre = nombre;
-        misiones[id].ciudad = ciudad;
-    }
-
-    string obtenerNombreMision(int id)
+    string obtenerNombreMision(int id, Ciudad *ciudades)
     {
         if (id >= 0 && id < 100)
         {
-            return misiones[id].nombre;
+            return ciudades[id].nombre;
         }
         return "Misión desconocida";
     }
 
-    void OrdenTopologic(GrafoLista *grafo, int *in_degree, List &ordenTopologico)
+    void OrdenTopologic(GrafoM *grafo, int *in_degree, List &ordenTopologico)
     {
         List cola;
 
-        for (int i = 0; i < grafo->cantidadVertices(); i++)
+        for (int i = 1; i <= grafo->cantidadVertices(); i++)
         {
             if (in_degree[i] == 0)
             {
                 Mision *nueva = new Mision();
                 nueva->id = i;
-                nueva->nombre = obtenerNombreMision(i);
                 ordenTopologico.InsertPpio(nueva);
             }
         }
     }
 
-    void caminoMasCorto(int *costos, int *vengo, Ciudad destino, Ciudad origen, List &OrdenTopologico, GrafoLista *g, int *indegree)
+    void caminoMasCorto(int *costos, int *vengo, Ciudad &origen, List &OrdenTopologico, GrafoM *f, int *indegree, GrafoLista *g, Mision *misiones, Ciudad *ciudades)
     {
         bool *visitados = new bool[cantciudades + 1]();
-        int costoTot = 0;
-        Ciudad ciudadActual = origen;
+        int costoTot = 0;             // Costo total de las misiones
+        Ciudad ciudadActual = origen; // Ciudad actual donde comienza
 
-        LlenarVectorGrados(g, indegree);
-        OrdenTopologic(g, indegree, OrdenTopologico);
+        LlenarVectorGrados(f, indegree);
+        OrdenTopologic(f, indegree, OrdenTopologico);
+               cout << "Ciudad inicial: " << ciudadActual.nombre << endl;
 
         while (!OrdenTopologico.esVacia())
         {
-            int misionId = 0;
-            LlenarVectorGrados(g, indegree);
-            OrdenTopologic(g, indegree, OrdenTopologico);
-            int cantOrden0 = OrdenTopologico.cantidadElementos0();
+            int cantOrden0 = OrdenTopologico.cantidadElementos(); 
 
-            // Llamada a Dijkstra para obtener el camino más corto desde ciudadActual
+            for (int i = 1; i <= cantciudades; i++)
+            {
+                costos[i] = INT_MAX;
+                vengo[i] = -1;
+                visitados[i] = false;
+            }
+            costos[ciudadActual.id] = 0;
+           
+           
             dijsktra(ciudadActual, g, costos, vengo, visitados);
+
+            int misionId = 0;         
+            int costoMin = INT_MAX; 
 
             for (int i = 1; i <= cantOrden0; i++)
             {
                 int misionDisp = OrdenTopologico.extraerElem();
-                int costoMin = INT16_MAX;
-
-                if (costos[misionDisp] < costoMin)
+                int misionciudad = misiones[misionDisp].ciudad.id;
+               
+             
+                if (costos[misionciudad] < costoMin)
                 {
-                    costoMin = costos[misionDisp];
+                    costoMin = costos[misionciudad];
                     misionId = misionDisp;
                 }
-
-                string camino = camino1(vengo, misionDisp, ciudadActual.id);
-                costoTot += costos[misionDisp];
-                ciudadActual = misiones[misionDisp].ciudad;
-
-                cout << camino << " -> Misión: " << misiones[misionId].nombre
-                     << " - " << misiones[misionId].ciudad.nombre
-                     << " - Tiempo de viaje: " << costos[misionDisp] << endl;
             }
-        }
+           
+            Arista2 *ady = f->adyacentes(misionId);
+            while (ady)
+            {
+                indegree[ady->destino.id]--; // Reducir el grado de entrada del destino
+                ady = ady->sig;      
+            }
+            
+            f->eliminarVertice(misionId);
+            indegree[misionId] = -1; 
+       
+            
+            string camino = camino1(vengo, misiones[misionId].ciudad.id, ciudadActual.id, ciudades);
 
-        delete[] visitados;
+          
+            costoTot += costos[misiones[misionId].ciudad.id];
+
+            ciudadActual = misiones[misionId].ciudad;
+            
+            cout << camino << " -> Mision: " << misiones[misionId].nombre
+                 << " - " << obtenerNombreMision(misiones[misionId].ciudad.id,ciudades)
+                 << " - Tiempo de viaje: " << costos[misiones[misionId].ciudad.id] << endl;
+            
+            OrdenTopologic(f, indegree, OrdenTopologico); 
+        }
+        cout << "Misiones ejecutadas con exito." <<endl;
+            cout << "Tiempo total de viaje: " << costoTot << endl;
     }
 
-    // Método para construir el camino
-    string camino1(int *vengo, int destino, int origen)
+    string camino1(int *vengo, int destino, int origen, Ciudad *ciudades)
     {
         string camino;
         int actual = destino;
 
         while (actual != origen)
         {
-            camino = " -> " + to_string(actual) + camino;
+            camino = " -> " + ciudades[actual].nombre + camino;
             actual = vengo[actual];
         }
 
-        return to_string(origen) + camino;
+        return ciudades[origen].nombre + camino;
     }
 
-    void dijsktra(Ciudad origen, GrafoLista *g, int *costos, int *vengo, bool *visitados)
+    void dijsktra(Ciudad &origen, GrafoLista *g, int *costos, int *vengo, bool *visitados)
     {
-        MinHeap h(cantciudades + 1);
-        h.insertar(origen);
+        MinHeap h(cantciudades*cantciudades);
+        h.insertar(origen, costos);
         while (!h.estaVacio())
         {
-            Ciudad v = h.extraerMin();
+            Ciudad v = h.extraerMin(costos);
             visitados[v.id] = true;
             Arista *w = g->adyacentes(v.id);
-            while (w)
+            Arista *aux = w;
+            while (aux)
             {
-                if (!visitados[w->destino.id] && costos[w->destino.id] > costos[v.id] + w->peso)
+                if (!visitados[aux->destino.id] && costos[aux->destino.id] > costos[v.id] + aux->peso )
+                   
                 {
-                    costos[w->destino.id] = costos[v.id] + w->peso;
-                    vengo[w->destino.id] = v.id;
-                    h.insertar(w->destino);
+                    costos[aux->destino.id] = costos[v.id] + aux->peso;
+                    vengo[aux->destino.id] = v.id;
+
+                    h.insertar(aux->destino, costos);
                 }
+                aux = aux->sig;
+            
             }
         }
     }
@@ -388,28 +493,31 @@ int main()
 {
     int numMisiones;
     cin >> numMisiones;
-    GrafoLista grafo(numMisiones, true, false);
-    Mision *misiones = new Mision[numMisiones];
-    for (int i = 0; i < numMisiones; ++i)
+
+    GrafoM grafoMisiones(numMisiones, true, false);
+    Mision *misiones = new Mision[numMisiones + 1];
+    for (int i = 1; i <= numMisiones; ++i)
     {
         int id, ciudadId;
         string nombre;
         cin >> id >> nombre >> ciudadId;
 
-        misiones[id] = Mision{nombre, id, Ciudad{ciudadId, ""}};
-        int i = 0;
-        while (i != 0)
+        misiones[id] = {nombre, id, ciudadId};
+
+        int misionSiguiente;
+        while (cin >> misionSiguiente && misionSiguiente != 0)
         {
-            int misionsig;
-            cin >> misionsig;
+            Mision origen = {nombre, id};
+            Mision destino = {misiones[misionSiguiente].nombre, misionSiguiente};
+            grafoMisiones.agregarArista(origen, destino);
         }
-        grafo.agregarArista()
     }
 
     int numCiudades;
-    cin >> numCiudades;
+    int CuidadInicial;
+    cin >> numCiudades >> CuidadInicial;
 
-    Ciudad *ciudades = new Ciudad[numCiudades];
+    Ciudad *ciudades = new Ciudad[numCiudades + 1];
     for (int i = 1; i <= numCiudades; ++i)
     {
         int id;
@@ -418,44 +526,43 @@ int main()
         ciudades[id] = {id, nombre};
     }
 
-    GrafoLista grafo(numCiudades, true, true);
-
+    GrafoLista* grafoCiudades = new GrafoLista(numCiudades, true, true);
     int numAristas;
     cin >> numAristas;
-
     for (int i = 0; i < numAristas; ++i)
     {
         int origenId, destinoId, peso;
         cin >> origenId >> destinoId >> peso;
         Ciudad origen = {origenId, ciudades[origenId].nombre};
         Ciudad destino = {destinoId, ciudades[destinoId].nombre};
-        grafo.agregarArista(origen, destino, peso);
+        grafoCiudades->agregarArista(origen, destino, peso);
     }
 
-    // Ciudad inicial (Punta_Del_Este es la ciudad con id 6)
-    int ciudadInicial = 6;
-    cout << "Ciudad inicial: " << ciudades[ciudadInicial].nombre << endl;
-
-    int tiempoTotal = 0;
-    int ciudadActual = ciudadInicial;
-
-    for (Mision *mision : misiones)
+    int *costos = new int[numCiudades + 1];
+    int *vengo = new int[numCiudades + 1];
+    bool *visitados = new bool[numCiudades + 1]();
+    for (int i = 1; i <= numCiudades; i++)
     {
-        vector<int> distancias = grafo.dijkstra(ciudadActual);
-
-        int costoViaje = distancias[mision.ciudadId];
-        tiempoTotal += costoViaje;
-
-        cout << ciudades[ciudadActual].nombre << " -> " << ciudades[mision.ciudadId].nombre
-             << " -> Mision: " << mision.nombre
-             << " - " << ciudades[mision.ciudadId].nombre
-             << " - Tiempo de viaje: " << costoViaje << endl;
-
-        ciudadActual = mision.ciudadId;
+        costos[i] = INT_MAX;
+        vengo[i] = -1;
     }
 
-    cout << "Misiones ejecutadas con exito." << endl;
-    cout << "Tiempo total de viaje: " << tiempoTotal << endl;
+    Ciudad ciudadInicial = {CuidadInicial, ciudades[CuidadInicial].nombre};
+    costos[ciudadInicial.id] = 0;
+    camino c(numCiudades);
+    List OrdenTopologico;
+    int *indegree = new int[numMisiones + 1]();
+
+
+    c.caminoMasCorto(costos, vengo, ciudadInicial, OrdenTopologico, &grafoMisiones, indegree, grafoCiudades, misiones, ciudades);
+
+   
+    delete[] indegree;
+    delete[] misiones;
+    delete[] ciudades;
+    delete[] costos;
+    delete[] vengo;
+    delete[] visitados;
 
     return 0;
 }

@@ -344,79 +344,32 @@ void eliminar(int id)
 #include <fstream>
 int main()
 {
-    // fstream file("");
-    // if (!file.is_open()) {
-    //     cerr << "Error" << endl;
-    //     return -1;
-    // }
-    // int N = 0;
-    // file >> N;
-    // ColaPrioridadExt cola(N, N);
-
-    // int O = 0;
-    // file >> O;
-
-    // for (int i = 0; i < O; i++)
-    // {
-    //     string f = "";
-    //     file >> f;
-
-    //     if (f == "I")
-    //     {
-
-    //         int id = 0;
-    //         file >> id;
-    //         int prioridad = 0;
-    //         file >> prioridad;
-    //         string paraLlevarStr;
-    //         file >> paraLlevarStr;
-
-    //         bool paraLlevar = false;
-    //         if (paraLlevarStr == "true")
-    //         {
-    //             paraLlevar = true;
-    //         }
-
-    //         string item = "";
-    //         file >> item;
-
-    //         cola.insertarCP(id, prioridad, paraLlevar, item);
-    //     }
-    //     else if (f == "E")
-    //     {
-    //         int id = 0;
-    //         file >> id;
-    //         cola.eliminar(id);
-    //     }
-    //     else
-    //     {
-    //         int id = 0;
-    //         file >> id;
-    //         cola.cambiarParaLlevar(id);
-    //     }
-    // }
-
-    // cola.mostrarPedidosPendientes();
+    fstream file("");
+    if (!file.is_open()) {
+        cerr << "Error" << endl;
+        return -1;
+    }
     int N = 0;
-    cin >> N;
+    file >> N;
     ColaPrioridadExt cola(N, N);
 
     int O = 0;
-    cin >> O;
+    file >> O;
 
     for (int i = 0; i < O; i++)
     {
         string f = "";
-        cin >> f;
+        file >> f;
 
         if (f == "I")
         {
+
             int id = 0;
-            cin >> id;
+            file >> id;
             int prioridad = 0;
-            cin >> prioridad;
+            file >> prioridad;
             string paraLlevarStr;
-            cin >> paraLlevarStr;
+            file >> paraLlevarStr;
 
             bool paraLlevar = false;
             if (paraLlevarStr == "true")
@@ -425,25 +378,72 @@ int main()
             }
 
             string item = "";
-            cin >> item;
+            file >> item;
 
             cola.insertarCP(id, prioridad, paraLlevar, item);
         }
         else if (f == "E")
         {
             int id = 0;
-            cin >> id;
+            file >> id;
             cola.eliminar(id);
         }
         else
         {
             int id = 0;
-            cin >> id;
+            file >> id;
             cola.cambiarParaLlevar(id);
         }
     }
 
     cola.mostrarPedidosPendientes();
+    // int N = 0;
+    // cin >> N;
+    // ColaPrioridadExt cola(N, N);
 
-    return 0;
+    // int O = 0;
+    // cin >> O;
+
+    // for (int i = 0; i < O; i++)
+    // {
+    //     string f = "";
+    //     cin >> f;
+
+    //     if (f == "I")
+    //     {
+    //         int id = 0;
+    //         cin >> id;
+    //         int prioridad = 0;
+    //         cin >> prioridad;
+    //         string paraLlevarStr;
+    //         cin >> paraLlevarStr;
+
+    //         bool paraLlevar = false;
+    //         if (paraLlevarStr == "true")
+    //         {
+    //             paraLlevar = true;
+    //         }
+
+    //         string item = "";
+    //         cin >> item;
+
+    //         cola.insertarCP(id, prioridad, paraLlevar, item);
+    //     }
+    //     else if (f == "E")
+    //     {
+    //         int id = 0;
+    //         cin >> id;
+    //         cola.eliminar(id);
+    //     }
+    //     else
+    //     {
+    //         int id = 0;
+    //         cin >> id;
+    //         cola.cambiarParaLlevar(id);
+    //     }
+    // }
+
+    // cola.mostrarPedidosPendientes();
+
+    // return 0;
 }
