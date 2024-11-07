@@ -474,7 +474,7 @@ public:
             Arista *aux = w;
             while (aux)
             {
-                if (!visitados[aux->destino.id] && costos[aux->destino.id] > costos[v.id] + aux->peso )
+                if (costos[aux->destino.id] > costos[v.id] + aux->peso )
                    
                 {
                     costos[aux->destino.id] = costos[v.id] + aux->peso;
@@ -526,7 +526,7 @@ int main()
         ciudades[id] = {id, nombre};
     }
 
-    GrafoLista* grafoCiudades = new GrafoLista(numCiudades, true, true);
+    GrafoLista* grafoCiudades = new GrafoLista(numCiudades, false, true);
     int numAristas;
     cin >> numAristas;
     for (int i = 0; i < numAristas; ++i)
