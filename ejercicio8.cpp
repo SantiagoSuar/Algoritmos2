@@ -32,40 +32,62 @@ private:
         return c1.poblacion + c2.poblacion;
     }
 
-    void ordenarCiudadesX(Ciudad *&ciudades, int cantCiudades)
-    {
-        // Puedes reemplazar este bubble sort con std::sort para mayor eficiencia
-        int n = cantCiudades;
-        for (int i = 0; i < n - 1; ++i)
-        {
-            for (int j = 0; j < n - i - 1; ++j)
-            {
-                if (ciudades[j].x > ciudades[j + 1].x)
-                {
-                    Ciudad temp = ciudades[j];
-                    ciudades[j] = ciudades[j + 1];
-                    ciudades[j + 1] = temp;
-                }
-            }
+ // Función genérica de merge
+void merge(Ciudad* ciudades, Ciudad* temp, int inicio, int medio, int fin, int eje) {
+    // Copiar al array temporal
+    for(int i = inicio; i <= fin; i++) {
+        temp[i] = ciudades[i];
+    }
+    
+    int i = inicio;
+    int j = medio + 1;
+    int k = inicio;
+    
+    while(i <= medio && j <= fin) {
+        bool comparacion;
+        if(eje == 0) {
+            comparacion = temp[i].x <= temp[j].x;
+        } else {
+            comparacion = temp[i].y <= temp[j].y;
+        }
+        
+        if(comparacion) {
+            ciudades[k++] = temp[i++];
+        } else {
+            ciudades[k++] = temp[j++];
         }
     }
+    
+    // Copiar elementos restantes
+    while(i <= medio) {
+        ciudades[k++] = temp[i++];
+    }
+}
 
-    void ordenarCiudadesY(Ciudad *&ciudades, int cantCiudades)
-    {
-        int n = cantCiudades;
-        for (int i = 0; i < n - 1; ++i)
-        {
-            for (int j = 0; j < n - i - 1; ++j)
-            {
-                if (ciudades[j].y > ciudades[j + 1].y)
-                {
-                    Ciudad temp = ciudades[j];
-                    ciudades[j] = ciudades[j + 1];
-                    ciudades[j + 1] = temp;
-                }
-            }
-        }
+// Función principal de ordenamiento
+void mergeSort(Ciudad* ciudades, Ciudad* temp, int inicio, int fin, int eje) {
+    if(inicio < fin) {
+        int medio = inicio + (fin - inicio) / 2;
+        
+        mergeSort(ciudades, temp, inicio, medio, eje);
+        mergeSort(ciudades, temp, medio + 1, fin, eje);
+        merge(ciudades, temp, inicio, medio, fin, eje);
     }
+}
+
+// Funciones wrapper
+void ordenarCiudadesX(Ciudad*& ciudades, int cantCiudades) {
+    Ciudad* temp = new Ciudad[cantCiudades];
+    mergeSort(ciudades, temp, 0, cantCiudades - 1, 0);
+    delete[] temp;
+}
+
+void ordenarCiudadesY(Ciudad*& ciudades, int cantCiudades) {
+    Ciudad* temp = new Ciudad[cantCiudades];
+    mergeSort(ciudades, temp, 0, cantCiudades - 1, 1);
+    delete[] temp;
+}
+
 
     void esSolucionTrivial(Ciudad *ciudades, int cantCiudades)
     {
@@ -107,7 +129,7 @@ public:
     Puntos()
     {
         sol = new Ciudad[2];
-        minDistancia = numeric_limits<double>::max();
+        minDistancia = INT_MAX;
     }
 
     ~Puntos()

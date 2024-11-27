@@ -341,35 +341,30 @@ void eliminar(int id)
         }
     }
 };
-#include <fstream>
 int main()
 {
-    fstream file("");
-    if (!file.is_open()) {
-        cerr << "Error" << endl;
-        return -1;
-    }
+
+   
     int N = 0;
-    file >> N;
+    cin >> N;
     ColaPrioridadExt cola(N, N);
 
     int O = 0;
-    file >> O;
+    cin >> O;
 
     for (int i = 0; i < O; i++)
     {
         string f = "";
-        file >> f;
+        cin >> f;
 
         if (f == "I")
         {
-
             int id = 0;
-            file >> id;
+            cin >> id;
             int prioridad = 0;
-            file >> prioridad;
+            cin >> prioridad;
             string paraLlevarStr;
-            file >> paraLlevarStr;
+            cin >> paraLlevarStr;
 
             bool paraLlevar = false;
             if (paraLlevarStr == "true")
@@ -378,72 +373,25 @@ int main()
             }
 
             string item = "";
-            file >> item;
+            cin >> item;
 
             cola.insertarCP(id, prioridad, paraLlevar, item);
         }
         else if (f == "E")
         {
             int id = 0;
-            file >> id;
+            cin >> id;
             cola.eliminar(id);
         }
         else
         {
             int id = 0;
-            file >> id;
+            cin >> id;
             cola.cambiarParaLlevar(id);
         }
     }
 
     cola.mostrarPedidosPendientes();
-    // int N = 0;
-    // cin >> N;
-    // ColaPrioridadExt cola(N, N);
 
-    // int O = 0;
-    // cin >> O;
-
-    // for (int i = 0; i < O; i++)
-    // {
-    //     string f = "";
-    //     cin >> f;
-
-    //     if (f == "I")
-    //     {
-    //         int id = 0;
-    //         cin >> id;
-    //         int prioridad = 0;
-    //         cin >> prioridad;
-    //         string paraLlevarStr;
-    //         cin >> paraLlevarStr;
-
-    //         bool paraLlevar = false;
-    //         if (paraLlevarStr == "true")
-    //         {
-    //             paraLlevar = true;
-    //         }
-
-    //         string item = "";
-    //         cin >> item;
-
-    //         cola.insertarCP(id, prioridad, paraLlevar, item);
-    //     }
-    //     else if (f == "E")
-    //     {
-    //         int id = 0;
-    //         cin >> id;
-    //         cola.eliminar(id);
-    //     }
-    //     else
-    //     {
-    //         int id = 0;
-    //         cin >> id;
-    //         cola.cambiarParaLlevar(id);
-    //     }
-    // }
-
-    // cola.mostrarPedidosPendientes();
-
-    // return 0;
+    return 0;
 }

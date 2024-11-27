@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 #include <limits>
-#include <fstream>
+
 using namespace std;
 
 struct Libro
@@ -271,37 +271,32 @@ public:
 };
 
 
-#include <iostream>
-#include <fstream>
-#include <string>
-using namespace std;
 
 int main() {
-    fstream file("C:\\Users\\Santiago\\Algoritmos2\\Obligatorio1\\ejercicio4\\100.in.txt");
-
-    if (!file.is_open()) {
-        cout << "Error al abrir archivo" << endl;
-        return -1;
-    }
-    HASH *arbol = new HASH(20);
-    string operacion, param2;
-    int param1;
-
-    // Leer todas las operaciones desde el archivo
-    while (file >> operacion) {
-
-        if (operacion == "ADD") {
-            file >> param1 >> param2;
-            arbol->ejecutarOperacion(operacion, param1, param2);
-        } else if (operacion == "FIND" || operacion == "TOGGLE") {
-            file >> param1;
-            arbol->ejecutarOperacion(operacion, param1);
-        } else if (operacion == "COUNT") {
-            arbol->ejecutarOperacion(operacion, 0, "");
+    int numOperaciones;
+    cin >> numOperaciones;
+    HASH *h = new HASH(7);
+    for (int i = 0; i < numOperaciones; i++)
+    {
+        string operacion, param2;
+        int  param1;
+        cin >> operacion;
+        if (operacion == "ADD")
+        {
+            cin >> param1 >> param2;
+            h->ejecutarOperacion(operacion, param1, param2);
+        }
+        else if (operacion == "FIND" || operacion == "TOGGLE")
+        {
+            cin >> param1;
+            h->ejecutarOperacion(operacion, param1);
+        }
+        else if (operacion == "COUNT")
+        {
+            h->ejecutarOperacion(operacion,0,"");
         }
     }
 
-    file.close();
     return 0;
 }
 
