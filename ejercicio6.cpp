@@ -1,264 +1,390 @@
-#include <iostream>
+#include <cassert>
 #include <string>
+#include <iostream>
 #include <limits>
 
 using namespace std;
 
-struct Ciudad {
+struct Ciudad
+{
     int id;
     string nombre;
 };
 
-struct Arista {
+struct Arista
+{
     Ciudad origen;
     Ciudad destino;
     int peso;
     Arista *sig;
 };
 
-class MinHeap {
+class MinHeap
+{
 private:
-    Ciudad *vec;
-    int *costos;
-    int capacidad;
+    struct Nodo
+    {
+        int idCiudad;
+        int costo;
+    };
+    Nodo *vec;
+    int *vecPosiciones;
     int primeroLibre;
+    int capacidad;
 
-    int padre(int pos) { return pos / 2; }
-    int hijoIzq(int pos) { return 2 * pos; }
-    int hijoDer(int pos) { return 2 * pos + 1; }
-
-        
-    bool comparar(const Ciudad &padre, const Ciudad &hijo, int *costos)
+    bool comparar(const Nodo &a, const Nodo &b)
     {
-        if (costos[padre.id] == costos[hijo.id])
-        {
-            return padre.id > hijo.id; // Menor id tiene prioridad si los costos son iguales
-        }
-        return costos[padre.id] > costos[hijo.id]; // Menor costo tiene prioridad
+        if (a.costo == b.costo)
+            return a.idCiudad > b.idCiudad;
+        return a.costo < b.costo;
     }
 
-    void intercambiar(int pos1, int pos2) {
-        Ciudad aux = vec[pos1];
+    void intercambiar(int pos1, int pos2)
+    {
+        Nodo temp = vec[pos1];
         vec[pos1] = vec[pos2];
-        vec[pos2] = aux;
+        vec[pos2] = temp;
+
+        vecPosiciones[vec[pos1].idCiudad] = pos1;
+        vecPosiciones[vec[pos2].idCiudad] = pos2;
     }
 
-    void flotar(int pos) {
-        if (pos == 1) return;
-        int posPadre = padre(pos);
-        if (comparar(vec[posPadre], vec[pos], costos)) {
-            intercambiar(posPadre, pos);
-            flotar(posPadre);
-        }
-    }
-
-     void hundir(int pos, int *costos)
+    void flotar(int pos)
     {
-        int posIzq = hijoIzq(pos);
-        int posDer = hijoDer(pos);
-        int menor = pos;
-        if (posIzq < primeroLibre && comparar(vec[menor], vec[posIzq], costos))
+        while (pos > 1)
         {
-            menor = posIzq;
+            int posPadre = pos / 2;
+            if (comparar(vec[pos], vec[posPadre]))
+            {
+                intercambiar(pos, posPadre);
+                pos = posPadre;
+            }
+            else
+            {
+                break;
+            }
         }
-        if (posDer < primeroLibre && comparar(vec[menor], vec[posDer], costos))
+    }
+
+    void hundir(int pos)
+    {
+        while (2 * pos < primeroLibre)
         {
-            menor = posDer;
-        }
-        if (menor != pos && comparar(vec[pos], vec[menor], costos))
-        {
-            intercambiar(pos, menor);
-            hundir(menor, costos);
+            int hijoIzq = 2 * pos;
+            int hijoDer = 2 * pos + 1;
+            int menor = pos;
+
+            if (hijoIzq < primeroLibre && comparar(vec[hijoIzq], vec[menor]))
+                menor = hijoIzq;
+            if (hijoDer < primeroLibre && comparar(vec[hijoDer], vec[menor]))
+                menor = hijoDer;
+
+            if (menor != pos)
+            {
+                intercambiar(pos, menor);
+                pos = menor;
+            }
+            else
+            {
+                break;
+            }
         }
     }
 
 public:
-    MinHeap(int tam) {
-        vec = new Ciudad[tam + 1]();
+    MinHeap(int tam)
+    {
         capacidad = tam;
+        vec = new Nodo[capacidad + 1];
+        vecPosiciones = new int[capacidad + 1]();
         primeroLibre = 1;
     }
 
-    void setCostos(int *costos) { this->costos = costos; }
-
-    ~MinHeap() { delete[] vec; }
-
-    bool estaVacio() { return primeroLibre == 1; }
-
-    void insertar(Ciudad obj) {
-        if (primeroLibre > capacidad) return;
-        vec[primeroLibre] = obj;
-        flotar(primeroLibre++);
+    ~MinHeap()
+    {
+        delete[] vec;
+        delete[] vecPosiciones;
     }
 
-    Ciudad extraerMin() {
-        Ciudad min = vec[1];
-        vec[1] = vec[--primeroLibre];
-        hundir(1, costos);
-        return min;
+    bool esVacio()
+    {
+        return primeroLibre == 1;
+    }
+
+    void insertar(int idCiudad, int costo)
+    {
+        if (vecPosiciones[idCiudad] == 0)
+        {
+            vec[primeroLibre].idCiudad = idCiudad;
+            vec[primeroLibre].costo = costo;
+            vecPosiciones[idCiudad] = primeroLibre;
+            flotar(primeroLibre);
+            primeroLibre++;
+        }
+        else
+        {
+            int pos = vecPosiciones[idCiudad];
+            if (costo < vec[pos].costo)
+            {
+                vec[pos].costo = costo;
+                flotar(pos);
+            }
+        }
+    }
+
+    Nodo extraerMin()
+    {
+        Nodo minNodo = vec[1];
+        vecPosiciones[minNodo.idCiudad] = 0;
+
+        vec[1] = vec[primeroLibre - 1];
+        vecPosiciones[vec[1].idCiudad] = 1;
+        primeroLibre--;
+
+        hundir(1);
+        return minNodo;
     }
 };
 
-class GrafoLista {
+class GrafoLista
+{
+
 private:
     Arista **vertices;
     int cantidadV;
     bool dirigido;
+    bool ponderado;
+    string *vecCiudades;
 
 public:
-    GrafoLista(int cantV, bool esDirigido) {
+    GrafoLista(int cantV, bool esDirigido, bool esPonderado)
+    {
         vertices = new Arista *[cantV + 1]();
         cantidadV = cantV;
         dirigido = esDirigido;
+        ponderado = esPonderado;
+        vecCiudades = new string[cantV + 1]();
     }
 
-    ~GrafoLista() {
-        for (int i = 0; i <= cantidadV; ++i) {
+    ~GrafoLista()
+    {
+        for (int i = 1; i <= cantidadV; i++)
+        {
             Arista *actual = vertices[i];
-            while (actual) {
+            while (actual)
+            {
                 Arista *temp = actual;
                 actual = actual->sig;
                 delete temp;
             }
         }
         delete[] vertices;
+        delete[] vecCiudades;
     }
- GrafoLista *copiarGrafo()
+
+    GrafoLista *copiarGrafo(bool d)
+{
+    GrafoLista *nuevoGrafo = new GrafoLista(cantidadV, d, ponderado);
+    for (int i = 1; i <= cantidadV; i++)
     {
-        GrafoLista *nuevoGrafo = new GrafoLista(cantidadV, dirigido);
-        for (int i = 1; i <= cantidadV; i++)
+        nuevoGrafo->setNombreCiudad(i, vecCiudades[i]);
+
+        Arista *actual = vertices[i];
+        while (actual)
         {
-            Arista *actual = vertices[i];
-            while (actual)
+            if (d || actual->destino.id > actual->origen.id)
             {
                 Ciudad origen = {actual->origen.id, actual->origen.nombre};
                 Ciudad destino = {actual->destino.id, actual->destino.nombre};
                 int peso = actual->peso;
                 nuevoGrafo->agregarArista(origen, destino, peso);
-
-                actual = actual->sig;
             }
+
+            actual = actual->sig;
         }
-        return nuevoGrafo;
     }
-    void agregarArista(Ciudad origen, Ciudad destino, int peso) {
-        Arista *nuevaArista = new Arista{origen, destino, peso, vertices[origen.id]};
+    return nuevoGrafo;
+}
+
+
+    void agregarArista(Ciudad origen, Ciudad destino, int peso)
+    {
+        Arista *nuevaArista = new Arista();
+        nuevaArista->origen = origen;
+        nuevaArista->destino = destino;
+        nuevaArista->peso = peso;
+        nuevaArista->sig = vertices[origen.id];
         vertices[origen.id] = nuevaArista;
 
-        if (!dirigido) {
-            Arista *inversa = new Arista{destino, origen, peso, vertices[destino.id]};
-            vertices[destino.id] = inversa;
+        Arista *inversa = new Arista();
+        inversa->origen = destino;
+        inversa->destino = origen;
+        inversa->peso = peso;
+        inversa->sig = vertices[destino.id];
+        vertices[destino.id] = inversa;
+    }
+
+    Arista *adyacentes(int vertice)
+    {
+        return vertices[vertice];
+    }
+
+    void multiplicoArista(int destino, int *vengoDe)
+    {
+        while (vengoDe[destino] != destino)
+        {
+            Arista *aux = vertices[vengoDe[destino]];
+            while (aux && aux->destino.id != destino)
+            {
+                aux = aux->sig;
+            }
+            if (aux)
+            {
+                aux->peso *= 2;
+            }
+
+            Arista *inverso = vertices[destino];
+            while (inverso && inverso->destino.id != vengoDe[destino])
+            {
+                inverso = inverso->sig;
+            }
+            if (inverso)
+            {
+                inverso->peso *= 2;
+            }
+
+            destino = vengoDe[destino];
+        }
+        return;
+    }
+
+    string camino(int destino, int *vengoDe)
+    {
+        if (vengoDe[destino] == destino)
+        {
+            return vecCiudades[destino] + " -> ";
+        }
+        else
+        {
+            return camino(vengoDe[destino], vengoDe) + vecCiudades[destino] + " -> ";
         }
     }
 
-    Arista *adyacentes(int vertice) { return vertices[vertice]; }
+    void setNombreCiudad(int id, string nombre)
+    {
+        vecCiudades[id] = nombre;
+    }
 
-    void multiplicoArista(int origen, int destino) {
-        Arista *aux = vertices[origen];
-        while (aux) {
-            if (aux->destino.id == destino) {
-                aux->peso *= 2;
-                break;
+    string *getVecCiudades()
+    {
+        return vecCiudades;
+    }
+
+};
+
+class caminoDijkstra
+{
+
+private:
+    int cantciudades;
+
+public:
+    caminoDijkstra(int numCiudades)
+    {
+        cantciudades = numCiudades;
+    }
+
+    void dijsktra(Ciudad &origen, GrafoLista *g, int *&costos, int *&vengo, bool *&visitados)
+    {
+        MinHeap h(cantciudades + 1);
+        h.insertar(origen.id, 0);
+        costos[origen.id] = 0;
+        vengo[origen.id] = origen.id;
+
+        while (!h.esVacio())
+        {
+            int ciudadActual = h.extraerMin().idCiudad;
+
+            if (visitados[ciudadActual])
+                continue;
+
+            visitados[ciudadActual] = true;
+
+            Arista *aux = g->adyacentes(ciudadActual);
+            while (aux)
+            {
+                int destino = aux->destino.id;
+                int nuevoCosto = costos[ciudadActual] + aux->peso;
+                if (!visitados[destino] && nuevoCosto < costos[destino])
+                {
+                    costos[destino] = nuevoCosto;
+                    vengo[destino] = ciudadActual;
+                    h.insertar(destino, nuevoCosto);
+                }
+                aux = aux->sig;
             }
-            aux = aux->sig;
-        }
-        aux = vertices[destino];
-        while (aux) {
-            if (aux->destino.id == origen) {
-                aux->peso *= 2;
-                break;
-            }
-            aux = aux->sig;
         }
     }
 };
 
-// Inicializar arrays para Dijkstra
-void initializeArrays(int cantCiudades, int *costos, int *vengo, bool *visitados) {
-    for (int i = 0; i <= cantCiudades; ++i) {
-        costos[i] = INT32_MAX;
-        vengo[i] = -1;
+void reinicio(int *&pesos, int *&vengoDe, bool *&visitados, int cantCiudades)
+{
+    for (int i = 1; i <= cantCiudades; i++)
+    {
+        pesos[i] = 999999;
+        vengoDe[i] = -1;
         visitados[i] = false;
     }
 }
 
-// Dijkstra
-void dijkstra(Ciudad &origen, GrafoLista *grafo, int cantCiudades, int *costos, int *vengo, bool *visitados) {
-    MinHeap heap(cantCiudades);
-    heap.setCostos(costos);
-    costos[origen.id] = 0;
-    heap.insertar(origen);
-
-    while (!heap.estaVacio()) {
-        Ciudad u = heap.extraerMin();
-        if (visitados[u.id]) continue;
-        visitados[u.id] = true;
-
-        for (Arista *adj = grafo->adyacentes(u.id); adj; adj = adj->sig) {
-            int v = adj->destino.id;
-            if (costos[v] > costos[u.id] + adj->peso) {
-                costos[v] = costos[u.id] + adj->peso;
-                vengo[v] = u.id;
-                heap.insertar(adj->destino);
-            }
-        }
-    }
-}
-
-int obtenerCamino(int origen, int destino, int *vengo, int *camino)
+int main()
 {
-    int indice = 0;
-    int actual = destino;
-    while (actual != -1)
-    {
-        camino[indice++] = actual;
-        if (actual == origen)
-            break;
-        actual = vengo[actual];
-    }
-    // Invertir el camino
-    for (int i = 0; i < indice / 2; ++i)
-    {
-        int temp = camino[i];
-        camino[i] = camino[indice - i - 1];
-        camino[indice - i - 1] = temp;
-    }
-    return indice; // Retorna la longitud del camino
-}
- 
-
-// Multiplicar pesos en el camino
-void duplicarPesosCamino(GrafoLista *grafo, int *camino, int longitud) {
-    for (int i = 0; i < longitud - 1; ++i) {
-        grafo->multiplicoArista(camino[i], camino[i + 1]);
-    }
-}
-
-int main() {
     int cantCiudades;
     cin >> cantCiudades;
-
-    string ciudades[301];
-    for (int i = 0; i < cantCiudades; ++i) {
+    string *ciudades = new string[cantCiudades + 1]();
+    for (int i = 0; i < cantCiudades; i++)
+    {
         int id;
         string nombre;
         cin >> id >> nombre;
         ciudades[id] = nombre;
     }
 
-    int morfeo, entidad, equipo, extraccion;
-    cin >> morfeo >> entidad >> equipo >> extraccion;
+    GrafoLista grafo(cantCiudades, false, true);
+    for (int i = 1; i <= cantCiudades; i++)
+    {
+        grafo.setNombreCiudad(i, ciudades[i]);
+    }
 
-    Ciudad ciudadMorfeo = {morfeo, ciudades[morfeo]};
-    Ciudad ciudadEntidad = {entidad, ciudades[entidad]};
-    Ciudad ciudadEquipo = {equipo, ciudades[equipo]};
-    Ciudad ciudadExtraccion = {extraccion, ciudades[extraccion]};
+    int morfeo;
+    cin >> morfeo;
+    Ciudad ciudadMorfeo;
+    ciudadMorfeo.id = morfeo;
+    ciudadMorfeo.nombre = ciudades[morfeo];
+
+    int entidad;
+    cin >> entidad;
+    Ciudad ciudadEntidad;
+    ciudadEntidad.id = entidad;
+    ciudadEntidad.nombre = ciudades[entidad];
+
+    int equipo;
+    cin >> equipo;
+    Ciudad ciudadEquipo;
+    ciudadEquipo.id = equipo;
+    ciudadEquipo.nombre = ciudades[equipo];
+
+    int extraccion;
+    cin >> extraccion;
+    Ciudad ciudadExtraccion;
+    ciudadExtraccion.id = extraccion;
+    ciudadExtraccion.nombre = ciudades[extraccion];
 
     int numAristas;
     cin >> numAristas;
 
-    GrafoLista grafo(cantCiudades, false);
-    for (int i = 0; i < numAristas; ++i) {
+    for (int i = 0; i < numAristas; i++)
+    {
         int origenId, destinoId, peso;
         cin >> origenId >> destinoId >> peso;
         Ciudad origen = {origenId, ciudades[origenId]};
@@ -266,104 +392,104 @@ int main() {
         grafo.agregarArista(origen, destino, peso);
     }
 
-    // Variables para almacenar costos y caminos
-    int costos[301], vengo[301], camino[301];
-    bool visitados[301];
-    int totalCostOption1 = 0, totalCostOption2 = 0;
+    GrafoLista *grafo1 = grafo.copiarGrafo(false);
+    GrafoLista *grafo2 = grafo.copiarGrafo(false);
 
-    string path1_step1, path1_step2, path1_step3;
-    string path2_step1, path2_step2, path2_step3;
-
-    // Opción 1: Desactivar la Entidad, Buscar Equipo, Ir a Punto de Extracción
-    GrafoLista *grafo1 = grafo.copiarGrafo();
-
-    // Paso 1: Morfeo a Entidad
-    initializeArrays(cantCiudades, costos, vengo, visitados);
-    dijkstra(ciudadMorfeo, grafo1, cantCiudades, costos, vengo, visitados);
-    totalCostOption1 += costos[ciudadEntidad.id];
-    int longitud = obtenerCamino(ciudadMorfeo.id, ciudadEntidad.id, vengo, camino);
-    for (int i = 0; i < longitud; ++i) {
-        if (i > 0) path1_step1 += " -> ";
-        path1_step1 += ciudades[camino[i]];
-    }
-    duplicarPesosCamino(grafo1, camino, longitud);
-
-    // Paso 2: Entidad a Equipo
-    initializeArrays(cantCiudades, costos, vengo, visitados);
-    dijkstra(ciudadEntidad, grafo1, cantCiudades, costos, vengo, visitados);
-    totalCostOption1 += costos[ciudadEquipo.id];
-    longitud = obtenerCamino(ciudadEntidad.id, ciudadEquipo.id, vengo, camino);
-    for (int i = 0; i < longitud; ++i) {
-        if (i > 0) path1_step2 += " -> ";
-        path1_step2 += ciudades[camino[i]];
-    }
-    duplicarPesosCamino(grafo1, camino, longitud);
-
-    // Paso 3: Equipo a Punto de Extracción
-    initializeArrays(cantCiudades, costos, vengo, visitados);
-    dijkstra(ciudadEquipo, grafo1, cantCiudades, costos, vengo, visitados);
-    totalCostOption1 += costos[ciudadExtraccion.id];
-    longitud = obtenerCamino(ciudadEquipo.id, ciudadExtraccion.id, vengo, camino);
-    for (int i = 0; i < longitud; ++i) {
-        if (i > 0) path1_step3 += " -> ";
-        path1_step3 += ciudades[camino[i]];
-    }
-    duplicarPesosCamino(grafo1, camino, longitud);
-
-    // Opción 2: Buscar Equipo, Desactivar la Entidad, Ir a Punto de Extracción
-    GrafoLista *grafo2 = grafo.copiarGrafo();
-
-    // Paso 1: Morfeo a Equipo
-    initializeArrays(cantCiudades, costos, vengo, visitados);
-    dijkstra(ciudadMorfeo, grafo2, cantCiudades, costos, vengo, visitados);
-    totalCostOption2 += costos[ciudadEquipo.id];
-    longitud = obtenerCamino(ciudadMorfeo.id, ciudadEquipo.id, vengo, camino);
-    for (int i = 0; i < longitud; ++i) {
-        if (i > 0) path2_step1 += " -> ";
-        path2_step1 += ciudades[camino[i]];
-    }
-    duplicarPesosCamino(grafo2, camino, longitud);
-
-    // Paso 2: Equipo a Entidad
-    initializeArrays(cantCiudades, costos, vengo, visitados);
-    dijkstra(ciudadEquipo, grafo2, cantCiudades, costos, vengo, visitados);
-    totalCostOption2 += costos[ciudadEntidad.id];
-    longitud = obtenerCamino(ciudadEquipo.id, ciudadEntidad.id, vengo, camino);
-    for (int i = 0; i < longitud; ++i) {
-        if (i > 0) path2_step2 += " -> ";
-        path2_step2 += ciudades[camino[i]];
-    }
-    duplicarPesosCamino(grafo2, camino, longitud);
-
-    // Paso 3: Entidad a Punto de Extracción
-    initializeArrays(cantCiudades, costos, vengo, visitados);
-    dijkstra(ciudadEntidad, grafo2, cantCiudades, costos, vengo, visitados);
-    totalCostOption2 += costos[ciudadExtraccion.id];
-    longitud = obtenerCamino(ciudadEntidad.id, ciudadExtraccion.id, vengo, camino);
-    for (int i = 0; i < longitud; ++i) {
-        if (i > 0) path2_step3 += " -> ";
-        path2_step3 += ciudades[camino[i]];
-    }
-    duplicarPesosCamino(grafo2, camino, longitud);
-
-    // Determinar la mejor opción
-    if (totalCostOption1 <= totalCostOption2) {
-        cout << "BE11, la mejor ruta es Desactivar la Entidad, buscar equipo y punto de extraccion con un costo de " << totalCostOption1 << endl;
-        cout << "La otra opcion tiene un costo de " << totalCostOption2 << endl;
-        cout << "Paso 1: " << path1_step1 << " -> Desactivar la Entidad" << endl;
-        cout << "Paso 2: " << path1_step2 << " -> Buscar equipo" << endl;
-        cout << "Paso 3: " << path1_step3 << " -> Ir a Punto de extraccion" << endl;
-    } else {
-        cout << "BE11, la mejor ruta es Buscar equipo, Desactivar la Entidad y punto de extraccion con un costo de " << totalCostOption2 << endl;
-        cout << "La otra opcion tiene un costo de " << totalCostOption1 << endl;
-        cout << "Paso 1: " << path2_step1 << " -> Buscar equipo" << endl;
-        cout << "Paso 2: " << path2_step2 << " -> Desactivar la Entidad" << endl;
-        cout << "Paso 3: " << path2_step3 << " -> Ir a Punto de extraccion" << endl;
+    int *pesosEntidad = new int[cantCiudades + 1];
+    int *vengoDeEntidad = new int[cantCiudades + 1];
+    bool *visitadosEntidad = new bool[cantCiudades + 1]();
+    for (int i = 1; i <= cantCiudades; i++)
+    {
+        pesosEntidad[i] = 999999;
+        vengoDeEntidad[i] = -1;
     }
 
-    // Liberar memoria
-    delete grafo1;
-    delete grafo2;
+    int *pesosEquipo = new int[cantCiudades + 1];
+    int *vengoDeEquipo = new int[cantCiudades + 1];
+    bool *visitadosEquipo = new bool[cantCiudades + 1]();
+    for (int i = 1; i <= cantCiudades; i++)
+    {
+        pesosEquipo[i] = 999999;
+        vengoDeEquipo[i] = -1;
+    }
+
+    caminoDijkstra c1(cantCiudades);
+    caminoDijkstra c2(cantCiudades);
+
+    c1.dijsktra(ciudadMorfeo, grafo1, pesosEntidad, vengoDeEntidad, visitadosEntidad);
+    int destino1 = entidad;
+    string cam1paso1 = grafo1->camino(destino1, vengoDeEntidad);
+    grafo1->multiplicoArista(destino1, vengoDeEntidad);
+
+    int costo1 = pesosEntidad[destino1];
+
+    reinicio(pesosEntidad, vengoDeEntidad, visitadosEntidad, cantCiudades);
+
+    c1.dijsktra(ciudadEntidad, grafo1, pesosEntidad, vengoDeEntidad, visitadosEntidad);
+    destino1 = equipo;
+    string cam1paso2 = grafo1->camino(destino1, vengoDeEntidad);
+    grafo1->multiplicoArista(destino1, vengoDeEntidad);
+    costo1 += pesosEntidad[destino1];
+
+    reinicio(pesosEntidad, vengoDeEntidad, visitadosEntidad, cantCiudades);
+
+    c1.dijsktra(ciudadEquipo, grafo1, pesosEntidad, vengoDeEntidad, visitadosEntidad);
+    destino1 = extraccion;
+    string cam1paso3 = grafo1->camino(destino1, vengoDeEntidad);
+    grafo1->multiplicoArista(destino1, vengoDeEntidad);
+    costo1 += pesosEntidad[destino1];
+
+    c2.dijsktra(ciudadMorfeo, grafo2, pesosEquipo, vengoDeEquipo, visitadosEquipo);
+    destino1 = equipo;
+    string cam2paso1 = grafo2->camino(destino1, vengoDeEquipo);
+    grafo2->multiplicoArista(destino1, vengoDeEquipo);
+    int costo2 = pesosEquipo[destino1];
+
+    reinicio(pesosEquipo, vengoDeEquipo, visitadosEquipo, cantCiudades);
+
+    c2.dijsktra(ciudadEquipo, grafo2, pesosEquipo, vengoDeEquipo, visitadosEquipo);
+    destino1 = entidad;
+    string cam2paso2 = grafo2->camino(destino1, vengoDeEquipo);
+    grafo2->multiplicoArista(destino1, vengoDeEquipo);
+    costo2 += pesosEquipo[destino1];
+
+    reinicio(pesosEquipo, vengoDeEquipo, visitadosEquipo, cantCiudades);
+
+    c2.dijsktra(ciudadEntidad, grafo2, pesosEquipo, vengoDeEquipo, visitadosEquipo);
+    destino1 = extraccion;
+    string cam2paso3 = grafo2->camino(destino1, vengoDeEquipo);
+    grafo2->multiplicoArista(destino1, vengoDeEquipo);
+    costo2 += pesosEquipo[destino1];
+
+    string tarea1 = "Desactivar la Entidad";
+    string tarea2 = "buscar equipo";
+    string paso11 = "Desactivar la Entidad";
+    string paso12 = "Buscar equipo";
+    string paso1 = cam1paso1;
+    string paso2 = cam1paso2;
+    string paso3 = cam1paso3;
+
+    int opcion1 = costo1;
+    int opcion2 = costo2;
+
+    if (costo1 > costo2)
+    {
+        tarea1 = "buscar equipo";
+        tarea2 = "Desactivar la Entidad";
+        paso11 = "Buscar equipo";
+        paso12 = "Desactivar la Entidad";
+        paso1 = cam2paso1;
+        paso2 = cam2paso2;
+        paso3 = cam2paso3;
+        opcion1 = costo2;
+        opcion2 = costo1;
+    }
+
+    cout << "BE11, la mejor ruta es " << tarea1 << ", " << tarea2 << " y punto de extraccion con un costo de " << opcion1 << endl;
+    cout << "La otra opcion tiene un costo de " << opcion2 << endl;
+    cout << "Paso 1: " << paso1 << paso11 << endl;
+    cout << "Paso 2: " << paso2 << paso12 << endl;
+    cout << "Paso 3: " << paso3 << "Ir a Punto de extraccion" << endl;
 
     return 0;
 }
